@@ -1,0 +1,49 @@
+SELECT
+  Internal_ID,
+  PARSE_TIMESTAMP('%d/%m/%y %H:%M', Date) AS Date,
+  New_value,
+  REGEXP_EXTRACT(New_value,'PROSPECT|LEAD|CUSTOMER|Won|Qualified|Unqualified') AS status,
+  null as Transaction_price,
+  Marketing_Category,
+  Marketing_Source,
+  Lead_Source,
+  Category,
+  Region
+FROM
+  `data.CRM.set_1`
+  
+  UNION ALL 
+  
+  (SELECT
+  Customer_ID,
+  TIMESTAMP(PARSE_DATE('%m/%d/%Y',Date_Created)) as Date,
+  Transaction_Document_Number,
+  "Purchase" as status,
+  REGEXP_REPLACE(Transaction_Price, r'\..*|[^0-9]', '') as Revenue,
+  Marketing_Category,
+  Marketing_Source,
+  Lead_Source,
+  Category,
+  Region
+FROM
+  `data.CRM.set_2` a
+LEFT JOIN
+  (SELECT
+  Internal_ID,
+  MAX(PARSE_TIMESTAMP('%d/%m/%y %H:%M', Date)) AS Date,
+  Marketing_Category,
+  Marketing_Source,
+  Lead_Source,
+  Category,
+  Region
+FROM
+  `nu-heat-251423.CRM.set_1`
+GROUP BY
+  Internal_ID,
+  Marketing_Category,
+  Marketing_Source,
+  Lead_Source,
+  Category,
+  Region) b
+ON
+  Customer_ID = Internal_ID)
