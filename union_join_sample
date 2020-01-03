@@ -29,7 +29,7 @@ LEFT JOIN (
     FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S',REGEXP_EXTRACT(start_time, r'(.*);'))) AS Start_time,
     Channel,
     Duration,
-    Mat_ID,
+    ID,
     Title,
     Template,
     Resource,
