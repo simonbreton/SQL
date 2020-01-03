@@ -1,0 +1,142 @@
+#1_spreadsheets_pageviews_consolidation
+
+select ID,sum(Unique_pageviews) as Unique_pageviews from(
+SELECT
+  REGEXP_EXTRACT(REGEXP_REPLACE(Page_path, r'\?.*', ''), r'/([^/]+)/?$') AS ID,
+  SUM(Unique_pageviews) AS Unique_pageviews
+FROM
+  `data.historical_data.pageviews2017`
+Group by ID
+UNION ALL 
+SELECT
+  REGEXP_EXTRACT(REGEXP_REPLACE(Page_path, r'\?.*', ''), r'/([^/]+)/?$') AS ID,
+  SUM(Unique_pageviews) AS Unique_pageviews
+FROM
+  `data.historical_data.pageviews2018`
+Group by ID
+UNION ALL
+SELECT
+  REGEXP_EXTRACT(REGEXP_REPLACE(Page_path, r'\?.*', ''), r'/([^/]+)/?$') AS ID,
+  SUM(Unique_pageviews) AS Unique_pageviews
+FROM
+  `data.historical_data.pageviews2019`
+Group by ID)
+group by ID
+
+#2_spreadsheets_events_consolidation
+
+SELECT
+  REGEXP_EXTRACT(REGEXP_REPLACE(Event_label, r'\?.*', ''), r'/([^/]+)/?$') AS ID,
+  SUM(Unique_events) AS Events
+FROM
+  `data.historical_data.events`
+GROUP BY
+  ID
+  
+#3_spreadsheets_timeonpage_consolidation
+
+SELECT
+  REGEXP_EXTRACT(REGEXP_REPLACE(Page_path, r'\?.*', ''), r'/([^/]+)/?$') AS ID,
+  avg( Avg__time_on_page ) AS avgtimeonpage
+FROM
+  `data.historical_data.timeonpage`
+GROUP BY
+  ID
+  
+#4_spreadsheets_pageviews_events_timeonpage_consolidation
+SELECT
+  t1.ID,
+  Unique_pageviews,
+  events,
+  avgtimeonpage
+FROM
+  `data.1_spreadsheets_pageviews_consolidation` AS t1
+FULL OUTER JOIN
+  `data.2_spreadsheets_events_consolidation` AS t2
+ON
+  t1.ID = t2.ID
+FULL OUTER JOIN
+  `data.3_spreadsheets_timeonepage_consolidation` AS t3
+ON
+  t1.id = t3.ID
+  
+#5_stitch_pageviews_events_timeonpage_consolidation
+SELECT
+  a.id,
+  unique_pageviews,
+  unique_events,
+  avg_timeonpage
+FROM (
+  SELECT
+    ID,
+    SUM(pageviews) AS unique_pageviews,
+    avg(avgtimeonepage) as avg_timeonpage
+  FROM (
+    SELECT
+      REGEXP_EXTRACT(REGEXP_REPLACE(pagepath, r'\?.*', ''), r'/([^/]+)/?$') AS ID,
+      pagepath,
+      end_date,
+      campaign,
+      MAX(uniquepageviews) AS pageviews,
+      MAX(avgtimeonpage) AS avgtimeonepage
+    FROM
+      `data.academicpositions_ga_pageviews.report`
+    WHERE
+      REGEXP_CONTAINS(pagepath, r'\/ad\/')
+    GROUP BY
+      end_date,
+      pagepath,
+      campaign,
+      ID)
+  GROUP BY
+    ID) a
+JOIN (
+  SELECT
+    ID,
+    SUM(unique_events) AS unique_events
+  FROM (
+    SELECT
+      REGEXP_EXTRACT(REGEXP_REPLACE(eventlabel, r'\?.*', ''), r'/([^/]+)/?$') AS ID,
+      MAX(uniqueevents) AS unique_events,
+      end_date,
+      campaign,
+      eventlabel
+    FROM
+      `data.academicsposition_ga_event.report`
+    WHERE
+      REGEXP_CONTAINS(eventlabel, r'\/ad\/')
+      and eventcategory = "Application"
+    GROUP BY
+      end_date,
+      campaign,
+      eventlabel )
+  GROUP BY
+    ID) b
+ON
+  a.id = b.id
+  
+#6_spreadsheets_stitch_pageviews_events_timeonpage_consolidation
+
+SELECT
+  ID,
+  SUM(Unique_pageviews) AS pageviews,
+  SUM(events) AS events,
+  avg(avgtimeonpage) as avg_timeonpage
+FROM (
+  SELECT
+    ID,
+    Unique_pageviews,
+    events,
+    avgtimeonpage 
+  FROM
+    `data.job_ads.4_spreadsheets_pageviews_events_timeonpage_consolidation`
+  UNION ALL
+  SELECT
+    ID,
+    unique_pageviews,
+    unique_events,
+    avg_timeonpage
+  FROM
+    `data.job_ads.5_stitch_pageviews_events_timeonpage_consolidation`)
+GROUP BY
+  ID
