@@ -1,0 +1,138 @@
+"(SELECT
+  LAST_VALUE(channel IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Channel,
+  LAST_VALUE(Start_time IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Start_time,
+  LAST_VALUE(Duration IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Duration,
+  LAST_VALUE(Mat_ID IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS ID,
+  LAST_VALUE(Title IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Title,
+  Event_label,
+  Custom_dimension_2,
+  ga.time,
+  Total_events
+FROM (
+  SELECT
+    CONCAT(CAST(Event_label AS string),"" "",FORMAT_TIMESTAMP('%Y-%m-%d %H:%M', PARSE_TIMESTAMP('%Y-%m-%d %k:%M',CONCAT(CAST(Date AS string),"" "",CAST(hour AS string),"":"",CAST((CASE
+                  WHEN LENGTH(CAST (Minute AS string)) > 1 THEN CAST(Minute AS string)
+                  ELSE CONCAT(CAST (0 AS string),CAST (Minute AS string)) END) AS string))))) AS UniqueID,
+    *,
+    FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', PARSE_TIMESTAMP('%Y-%m-%d %k:%M',CONCAT(CAST(Date AS string),"" "",CAST(hour AS string),"":"",CAST((CASE
+                WHEN LENGTH(CAST (Minute AS string)) > 1 THEN CAST(Minute AS string)
+                ELSE CONCAT(CAST (0 AS string),CAST (Minute AS string)) END) AS string)))) AS Time
+  FROM
+    `data` where Custom_dimension_2 = ""iOS"" order by time ) AS ga
+LEFT JOIN (
+  SELECT
+    CONCAT(CAST((CASE
+            WHEN Channel= ""foo"" THEN ""xxx""
+            WHEN Channel= ""foobar"" THEN ""xxx""
+            WHEN Channel= ""barfoo"" THEN ""xxx""
+            ELSE NULL END) AS string),"" "",FORMAT_TIMESTAMP('%Y-%m-%d %H:%M', PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S',REGEXP_EXTRACT(start_time, r'(.*);')))) AS UniqueID,
+    FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S',REGEXP_EXTRACT(start_time, r'(.*);'))) AS Start_time,
+    Channel,
+    Duration,
+    Mat_ID,
+    Title,
+    Template,
+    Resource,
+    Transfer_status,
+    Machine_status,
+    State
+  FROM
+    `data`
+  WHERE
+    Duration > '00:01:00:00') AS ar
+ON
+  ga.UniqueID = ar.UniqueID)
+  
+  UNION ALL
+  
+  (SELECT
+  LAST_VALUE(channel IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Channel,
+  LAST_VALUE(Start_time IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Start_time,
+  LAST_VALUE(Duration IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Duration,
+  LAST_VALUE(ID IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Mat_ID,
+  LAST_VALUE(Title IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Title,
+  Event_label,
+  Custom_dimension_2,
+  ga.time,
+  Total_events
+FROM (
+  SELECT
+    CONCAT(CAST(Event_label AS string),"" "",FORMAT_TIMESTAMP('%Y-%m-%d %H:%M', PARSE_TIMESTAMP('%Y-%m-%d %k:%M',CONCAT(CAST(Date AS string),"" "",CAST(hour AS string),"":"",CAST((CASE
+                  WHEN LENGTH(CAST (Minute AS string)) > 1 THEN CAST(Minute AS string)
+                  ELSE CONCAT(CAST (0 AS string),CAST (Minute AS string)) END) AS string))))) AS UniqueID,
+    *,
+    FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', PARSE_TIMESTAMP('%Y-%m-%d %k:%M',CONCAT(CAST(Date AS string),"" "",CAST(hour AS string),"":"",CAST((CASE
+                WHEN LENGTH(CAST (Minute AS string)) > 1 THEN CAST(Minute AS string)
+                ELSE CONCAT(CAST (0 AS string),CAST (Minute AS string)) END) AS string)))) AS Time
+  FROM
+    `data` where Custom_dimension_2 = ""Android"" order by time ) AS ga
+LEFT JOIN (
+  SELECT
+    CONCAT(CAST((CASE
+            WHEN Channel= ""foo"" THEN ""xxx""
+            WHEN Channel= ""foobar"" THEN ""xxx""
+            WHEN Channel= ""barfoo"" THEN ""xxx""
+            ELSE NULL END) AS string),"" "",FORMAT_TIMESTAMP('%Y-%m-%d %H:%M', PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S',REGEXP_EXTRACT(start_time, r'(.*);')))) AS UniqueID,
+    FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S',REGEXP_EXTRACT(start_time, r'(.*);'))) AS Start_time,
+    Channel,
+    Duration,
+    ID,
+    Title,
+    Template,
+    Resource,
+    Transfer_status,
+    Machine_status,
+    State
+  FROM
+    `data`
+  WHERE
+    Duration > '00:01:00:00') AS ar
+ON
+  ga.UniqueID = ar.UniqueID)
+  
+  UNION ALL 
+  
+  (SELECT
+  LAST_VALUE(channel IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Channel,
+  LAST_VALUE(Start_time IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Start_time,
+  LAST_VALUE(Duration IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Duration,
+  LAST_VALUE(ID IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Mat_ID,
+  LAST_VALUE(Title IGNORE NULLS) OVER (PARTITION BY Event_label ORDER BY ga.time ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Title,
+  Event_label,
+  Custom_dimension_2,
+  ga.time,
+  Total_events
+FROM (
+  SELECT
+    CONCAT(CAST(Event_label AS string),"" "",FORMAT_TIMESTAMP('%Y-%m-%d %H:%M', PARSE_TIMESTAMP('%Y-%m-%d %k:%M',CONCAT(CAST(Date AS string),"" "",CAST(hour AS string),"":"",CAST((CASE
+                  WHEN LENGTH(CAST (Minute AS string)) > 1 THEN CAST(Minute AS string)
+                  ELSE CONCAT(CAST (0 AS string),CAST (Minute AS string)) END) AS string))))) AS UniqueID,
+    *,
+    FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', PARSE_TIMESTAMP('%Y-%m-%d %k:%M',CONCAT(CAST(Date AS string),"" "",CAST(hour AS string),"":"",CAST((CASE
+                WHEN LENGTH(CAST (Minute AS string)) > 1 THEN CAST(Minute AS string)
+                ELSE CONCAT(CAST (0 AS string),CAST (Minute AS string)) END) AS string)))) AS Time
+  FROM
+    `data` where Custom_dimension_2 = ""Roku"" order by time ) AS ga
+LEFT JOIN (
+  SELECT
+    CONCAT(CAST((CASE
+            WHEN Channel= ""foo"" THEN ""xxx""
+            WHEN Channel= ""foobar"" THEN ""xxx""
+            WHEN Channel= ""barfoo"" THEN ""xxx""
+            ELSE NULL END) AS string),"" "",FORMAT_TIMESTAMP('%Y-%m-%d %H:%M', PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S',REGEXP_EXTRACT(start_time, r'(.*);')))) AS UniqueID,
+    FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S',REGEXP_EXTRACT(start_time, r'(.*);'))) AS Start_time,
+    Channel,
+    Duration,
+    ID,
+    Title,
+    Template,
+    Resource,
+    Transfer_status,
+    Machine_status,
+    State
+  FROM
+    `data`
+  WHERE
+    Duration > '00:01:00:00') AS ar
+ON
+  ga.UniqueID = ar.UniqueID)"
