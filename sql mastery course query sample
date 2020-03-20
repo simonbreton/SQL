@@ -1,0 +1,182 @@
+-- 4.8 
+select 
+	date_part('year',payment_date) as "year",
+	date_part('month',payment_date) as "month",
+	staff_id, 
+	avg(amount) as "avg_payment_amount", 
+	sum(amount) as "payment_total", 
+	count(payment_id) as "num_payments"
+from payment
+group by "year","month",staff_id
+
+-- 4.9
+select
+	count(*) filter(where return_date - rental_date < interval '3 days') as "lt 3 days",
+	count(*) filter(where return_date - rental_date >= interval '3 days') as "gt 3 days",
+	count(*) filter(where return_date - rental_date is null ) as "never returned"
+from rental
+
+-- 6.1
+select r.rental_date, f.title
+from customer as c
+	inner join rental as r
+		on c.customer_id = r.customer_id
+		inner join inventory as i
+		on r.inventory_id = i.inventory_id
+	inner join film as f
+		on i.film_id = f.film_id
+	inner join film as f
+		on i.film_id = f.film_id
+where first_name || ' ' || last_name = 'PETER MENARD'
+order by r.rental_date desc;
+
+-- 6.4
+select r.customer_id, count( distinct f.film_id) as "num_films",count( distinct fa.actor_id) as "num_actors"
+from rental  as r
+	inner join inventory as i
+		on r.inventory_id = i.inventory_id
+	inner join film as f
+		on i.film_id = f.film_id
+	inner join film_actor as fa
+		on f.film_id = fa.film_id
+group by r.customer_id
+order by r.customer_id
+
+-- 6.8
+select c.customer_id,count(rental_id)
+from customer  as c
+	left join 
+		(select customer_id, rental_id,rental_date
+		from rental as r 
+		where date_trunc('days',rental_date) = '2005-05-24 00:00:00') as t
+		using (customer_id)
+group by c.customer_id
+order by count(rental_id) desc;
+
+-- 7.5
+select sub1.customer_id, sub1.first_name, sub1.last_name, sub1.store_id
+from(
+	select c.customer_id, c.first_name, c.last_name, i.store_id, count(r.rental_id) as count_rental
+	from customer as c
+	left join rental as r using (customer_id)
+	left join inventory as i using (inventory_id)
+	group by c.customer_id, c.first_name, c.last_name, i.store_id) as sub1
+	where sub1.count_rental = (
+		select max(count_rental)
+		from(
+			select c.customer_id, c.first_name, c.last_name, i.store_id, count(r.rental_id) as count_rental
+			from customer as c
+			left join rental as r using (customer_id)
+			left join inventory as i using (inventory_id)
+			group by c.customer_id, c.first_name, c.last_name, i.store_id
+			) as sub2
+		where sub1.customer_id = sub2.customer_id
+		group by sub2.customer_id, sub2.first_name, sub2.last_name)
+group by sub1.customer_id, sub1.first_name, sub1.last_name, sub1.store_id, count_rental
+order by sub1.customer_id
+
+-- 7.8
+select day_name, round(avg(count))as "average"
+from (
+select count(rental_id), to_char(rental_date, 'WW'), to_char(rental_date, 'Day') as "day_name"
+from rental 
+group by to_char(rental_date, 'WW'), to_char(rental_date, 'Day')
+order by to_char(rental_date, 'WW')) as t
+group by day_name
+order by average desc;
+
+-- 7.9
+select c1.first_name,c1.last_name, title,rental_date
+from customer as c1
+	left join lateral
+		(
+		 select c2.customer_id, c2.first_name, c2.last_name, r.rental_date, f.title, f.rating
+		 from customer as c2
+		 left join rental as r using (customer_id)
+	 	 left join inventory as i using (inventory_id)
+		 left join 
+		 	(
+		 		select film_id,title,rating 
+		 		from film 
+		 		where rating = 'PG' 
+		 	) as f using (film_id)
+		 where c2.customer_id = c1.customer_id and title is not null
+		 order by c2.customer_id, r.rental_date
+		 limit 1 
+		) as t
+on c1.customer_id = t.customer_id
+
+-- 8.2
+with sub as (
+select 
+	customer_id,
+	rental_id,
+	film_id
+from rental
+inner join inventory using (inventory_id)
+order by film_id)
+
+select customer_id from (
+select 
+	count(rental_id),
+	film_id,
+	dense_rank() over (order by count(rental_id))
+from rental
+inner join inventory using (inventory_id)
+group by film_id
+order by count(rental_id)) as t
+left join sub using (film_id)
+where dense_rank = 1
+
+-- 8.6
+select *
+from(
+select *,
+row_number() over (partition by rating order by income desc)
+	from
+		(
+		select 
+			title, 
+			rating, 
+			rental_rate*count as income
+		from
+			(
+			select 
+				title,
+				rating, 
+				rental_rate,
+				count(rental_id)
+			from 
+				rental
+			left join 
+				inventory using (inventory_id)
+			inner join 
+				film using (film_id)
+			group by 	
+				title,
+				rating, 
+				rental_rate
+			) as t1
+		order by 
+			rating,
+			income desc,
+			title
+			) as t2
+			) as t3
+where row_number < 4
+
+-- 8.7
+select distinct first_value
+from(
+select *, first_value(rental_id) over (partition by shift)
+from (
+select *, rental_id-row_number as shift
+from(
+select 
+	rental_id,
+	row_number() over (order by rental_id asc)
+from rental 
+order by rental_id) as t1
+) as t2) as t3
+where first_value != '1'
+order by first_value
